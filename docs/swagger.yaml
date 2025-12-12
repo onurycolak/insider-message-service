@@ -1,0 +1,328 @@
+basePath: /
+definitions:
+  handlers.CreateMessageRequest:
+    properties:
+      content:
+        maxLength: 1000
+        type: string
+      phoneNumber:
+        type: string
+    required:
+    - content
+    - phoneNumber
+    type: object
+  handlers.StartSchedulerRequest:
+    properties:
+      failureRate:
+        maximum: 1
+        minimum: 0
+        type: number
+      interval:
+        minimum: 1
+        type: integer
+    type: object
+  response.ErrorResponse:
+    properties:
+      error:
+        type: string
+      success:
+        type: boolean
+    type: object
+  response.PaginatedResponse:
+    properties:
+      data: {}
+      page:
+        type: integer
+      pageSize:
+        type: integer
+      success:
+        type: boolean
+      totalCount:
+        type: integer
+      totalPages:
+        type: integer
+    type: object
+  response.SuccessResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: onur.colak@useinsider.com
+    name: API Support
+  description: Automatic message sending system for Insider One
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Insider Message Service API
+  version: "1.0"
+paths:
+  /api/v1/messages:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a paginated list of all messages with optional status
+        filter
+      parameters:
+      - description: API key for messages
+        in: header
+        name: x-ins-auth-key
+        required: true
+        type: string
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Page size (default: 20, max: 100)'
+        in: query
+        name: pageSize
+        type: integer
+      - description: Filter by status (pending, sent, failed)
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Get all messages
+      tags:
+      - messages
+    post:
+      consumes:
+      - application/json
+      description: Creates a new message to be sent by the scheduler
+      parameters:
+      - description: API key for messages
+        in: header
+        name: x-ins-auth-key
+        required: true
+        type: string
+      - description: Message to create
+        in: body
+        name: message
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Create a new message
+      tags:
+      - messages
+  /api/v1/messages/cached:
+    get:
+      consumes:
+      - application/json
+      description: Returns all messages cached in Redis (bonus feature)
+      parameters:
+      - description: API key for messages
+        in: header
+        name: x-ins-auth-key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Get cached messages from Redis
+      tags:
+      - messages
+  /api/v1/messages/sent:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a paginated list of all sent messages
+      parameters:
+      - description: API key for messages
+        in: header
+        name: x-ins-auth-key
+        required: true
+        type: string
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Page size (default: 20, max: 100)'
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Get sent messages
+      tags:
+      - messages
+  /api/v1/messages/stats:
+    get:
+      consumes:
+      - application/json
+      description: Returns count of messages by status
+      parameters:
+      - description: API key for messages
+        in: header
+        name: x-ins-auth-key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Get message statistics
+      tags:
+      - messages
+  /api/v1/scheduler/start:
+    post:
+      consumes:
+      - application/json
+      description: Starts the automatic message sending process with optional parameters
+      parameters:
+      - description: API key for scheduler
+        in: header
+        name: x-ins-auth-key
+        required: true
+        type: string
+      - description: Scheduler parameters (optional)
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/handlers.StartSchedulerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Start the message scheduler
+      tags:
+      - scheduler
+  /api/v1/scheduler/status:
+    get:
+      consumes:
+      - application/json
+      description: Returns the current status of the message scheduler
+      parameters:
+      - description: API key for scheduler
+        in: header
+        name: x-ins-auth-key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+      summary: Get scheduler status
+      tags:
+      - scheduler
+  /api/v1/scheduler/stop:
+    post:
+      consumes:
+      - application/json
+      description: Stops the automatic message sending process
+      parameters:
+      - description: API key for scheduler
+        in: header
+        name: x-ins-auth-key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Stop the message scheduler
+      tags:
+      - scheduler
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Returns overall status with DB and Redis connectivity results
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Health check
+      tags:
+      - health
+schemes:
+- http
+- https
+swagger: "2.0"
